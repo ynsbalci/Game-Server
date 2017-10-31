@@ -4,8 +4,10 @@
  * @Email:  ynsbalci@outlook.com
  * @Filename: server.js
  * @Last modified by:   Yunus BALCI
- * @Last modified time: 2017-10-28T19:15:10+03:00
+ * @Last modified time: 2017-10-31T19:58:15+03:00
  */
+
+
  var io = require('socket.io')(8000);
  var playerId = require('shortid');
  var roomId = require('shortid');
@@ -20,8 +22,8 @@
 
    var player = {
      id:playerId.generate(),
-     nick:"",
-     vehicle_id:"",
+     nick:null,
+     veh_id:0,
      spawn:false,
    };
 
@@ -34,9 +36,17 @@
 
    console.log(">> " + player.id + " CONNECTED");
 
+   socket.on('TEST', function (data){
+     //
+     console.log(">> TEST");
+     console.log(data);
+     socket.emit('TEST', data);
+   });
+
    //
    socket.on('JOIN_ROOM', function (data){
      //daha önce katılmışsa
+     //console.log("JOIN_ROOM " + data.type);
      if (room == null) {
        //
        room = JoinRoom(data);
@@ -50,7 +60,7 @@
        }
        else {
          console.log(">> JOIN_ROOM_ERROR");
-         socket.emit('JOIN_ROOM_ERROR');
+         socket.emit('JOIN_ROOM_ERROR', data);
        }
      }
      else {
@@ -62,6 +72,7 @@
    //
    socket.on('JOIN_RANDOM', function (data){
      //daha önce katılmamış sa
+     //console.log("JOIN_RANDOM " + data.type);
      if (room == null) {
 
        room = JoinRandom(data);
@@ -74,8 +85,8 @@
 
        }
        else {
-         console.log(">> JOIN_ROOM_ERROR");
-         socket.emit('JOIN_ROOM_ERROR');
+         console.log(">> JOIN_RANDOM_ERROR" + data.type);
+         socket.emit('JOIN_ROOM_ERROR', data);
        }
      }
      else {
@@ -92,7 +103,7 @@
 
        if (room != null) {
 
-         socket.emit('CREATE_ROOM', room);
+         //socket.emit('CREATE_ROOM', room);
          console.log(">> CREATED " + room.id + " " + room.name + " " + room.pass + " " + room.type + " " + room.max + " " + room.players.length);
 
          //room a katılım
@@ -101,10 +112,6 @@
          socket.emit('JOIN_ROOM', room);
          console.log(">> JOINED " + room.id + " " + room.name + " " + room.pass + " " + room.type + " " + room.max + " " + room.players.length);
 
-       }else {
-         //
-         console.log(">> CREATE_ROOM_ERROR");
-         socket.emit('CREATE_ROOM_ERROR');
        }
      }
      else {
@@ -123,6 +130,9 @@
    socket.on('SPAWN', function (data){
      //
      console.log(">> SPAWNED " + player.id);
+
+     player.nick = data.nick;
+     player.veh_id = data.veh_id;
 
      for (var i = 0; i < room.players.length; i++) {
        if(room.players[i].spawn){
@@ -143,7 +153,7 @@
 
    //
    socket.on('MOVE', function (data){
-     console.log(">> MOVE: " + player.id + " " + room.id + " " + data.pos);
+     //console.log(">> MOVE: " + player.id + " " + room.id + " " + data.pos);
      socket.broadcast.to(room.id).emit('MOVE', {
        id: player.id,
        pos: data.pos,
@@ -152,11 +162,12 @@
    });
 
    //
-   socket.on('SCORE', function (data){
-     console.log(">> SCORE");
-     io.sockets.to(room.id).emit('SCORE', {
-       id: currentPlayer.playerId,
-       order: data.order,
+   socket.on('FINISH', function (data){
+     console.log(">> FINISH");
+     console.log(data);
+     io.sockets.to(room.id).emit('FINISH', {
+       id: player.id,
+       nick: player.nick,
        score: data.score
      });
    });
@@ -249,9 +260,6 @@
      if (usableRooms[i].id != data.id) {
        return null;
      }
-     else if (usableRooms[i].name != data.name) {
-       return null;
-     }
      else if (usableRooms[i].players.length > parseInt(usableRooms[i].max)) {
        //hata var
        return null;
@@ -267,13 +275,19 @@
 
  function JoinRandom(data) {
    //
+   if (usableRooms.length > 0) {
+
    for (var i = 0; i < usableRooms.length; i++) {
 
      if (usableRooms[i].type == data.type) {
        return usableRooms[i];
+       break;
      }
 
    }//for
+ }else {
+   return null;
+ }
  }//function
 
  function CreateRoom(data) {
