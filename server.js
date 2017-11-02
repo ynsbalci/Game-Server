@@ -4,7 +4,7 @@
  * @Email:  ynsbalci@outlook.com
  * @Filename: server.js
  * @Last modified by:   Yunus BALCI
- * @Last modified time: 2017-10-31T19:58:15+03:00
+ * @Last modified time: 2017-11-02T14:36:13+03:00
  */
 
 
@@ -23,7 +23,7 @@
    var player = {
      id:playerId.generate(),
      nick:null,
-     veh_id:0,
+     vehId:0,
      spawn:false,
    };
 
@@ -33,6 +33,7 @@
 
    //
    socket.emit('CONNECT', player);
+
 
    console.log(">> " + player.id + " CONNECTED");
 
@@ -53,7 +54,7 @@
        //odaya gir
        if (room) {
          room.players.push(player);
-         socket.join(room.Id);
+         socket.join(room.id);
          socket.emit('JOIN_ROOM', room);
          console.log(">> JOINED " + room.id + " " + room.name + " " + room.pass + " " + room.max + " " + room.players.length);
 
@@ -79,7 +80,7 @@
        //odaya gir
        if (room) {
          room.players.push(player);
-         socket.join(room.Id);
+         socket.join(room.id);
          socket.emit('JOIN_ROOM', room);
          console.log(">> JOINED " + room.id + " " + room.name + " " + room.pass + " " + room.type + " " + room.max + " " + room.players.length);
 
@@ -108,7 +109,7 @@
 
          //room a katılım
          room.players.push(player);
-         socket.join(room.Id);
+         socket.join(room.id);
          socket.emit('JOIN_ROOM', room);
          console.log(">> JOINED " + room.id + " " + room.name + " " + room.pass + " " + room.type + " " + room.max + " " + room.players.length);
 
@@ -121,44 +122,49 @@
    });
 
    //
-   socket.on('JOIN_OR_CREATE_ROOM', function (data){
-     //
-     //
-   });
-
-   //
    socket.on('SPAWN', function (data){
      //
-     console.log(">> SPAWNED " + player.id);
+     if (room) {
+       console.log(">> SPAWNED " + player.id);
 
-     player.nick = data.nick;
-     player.veh_id = data.veh_id;
+       player.nick = data.nick;
+       player.vehId = data.vehId;
 
-     for (var i = 0; i < room.players.length; i++) {
-       if(room.players[i].spawn){
-         //
-         socket.emit('USER_CONNECTED', room.players[i]);
+       for (var i = 0; i < room.players.length; i++) {
+         if(room.players[i].spawn){
+           //
+           socket.emit('USER_CONNECTED', room.players[i]);
+         }
        }
-     }
-     socket.emit('SPAWN', player);
-     player.spawn = true;
-     socket.broadcast.to(room.id).emit('USER_CONNECTED',player);
 
-     if (StartGame(room)) {
-       //
-       io.sockets.to(room.id).emit('START', room);
+       socket.emit('SPAWN', player);
+       player.spawn = true;
+       socket.broadcast.to(room.id).emit('USER_CONNECTED',player);
+
+       if (StartGame(room)) {
+         //
+         io.sockets.to(room.id).emit('START', room);
+       }
+     }else {
+       console.log(">> I HAVE NO ROOM");
      }
 
    });
 
    //
    socket.on('MOVE', function (data){
-     //console.log(">> MOVE: " + player.id + " " + room.id + " " + data.pos);
-     socket.broadcast.to(room.id).emit('MOVE', {
-       id: player.id,
-       pos: data.pos,
-       rot: data.rot
-     });
+     //console.log(">> MOVE: " + player.id + " " + room.id + " " + data.p_x + " " + data.p_y + " " + data.p_z);
+     if (room) {
+       socket.broadcast.to(room.id).emit('MOVE', {
+         id: player.id,
+         p_x: data.p_x,
+         p_y: data.p_y,
+         p_z: data.p_z,
+         r_x: data.r_x,
+         r_y: data.r_y,
+         r_z: data.r_z
+       });
+     }
    });
 
    //
@@ -178,6 +184,7 @@
     //oda ya katılmışsa
     if (room) {
       //
+      socket.leave(room.id);
       console.log(">> " + player + " EXITED FROM " + room.id);
       RemoveInRoom(room, player);
 
@@ -239,6 +246,10 @@
   socket.on('disconnect', function (){
     //
     if (room) {
+      socket.leave(room.id);
+      socket.broadcast.to(room.id).emit('DISCONNECTED', {
+        id: player.id
+      });
       RemoveInRoom(room, player);
       if (room.players.length == 0) {
         //
@@ -285,9 +296,9 @@
      }
 
    }//for
- }else {
+  }else {
    return null;
- }
+  }
  }//function
 
  function CreateRoom(data) {
@@ -300,7 +311,7 @@
        max:data.max,
        scene:data.scene,
        type:data.type,
-       players:[],
+       players:[]
      };
      usableRooms.push(room);
      return room;

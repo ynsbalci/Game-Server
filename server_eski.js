@@ -4,7 +4,7 @@
  * @Email:  ynsbalci@outlook.com
  * @Filename: server.js
  * @Last modified by:   Yunus BALCI
- * @Last modified time: 2017-10-28T19:09:07+03:00
+ * @Last modified time: 2017-11-02T11:42:21+03:00
  */
 
 
@@ -104,7 +104,7 @@ io.sockets.on('connection', function(socket) {
 		currentRoom.roomUsers = [];
 		currentRoom.roomUsers.push(currentPlayer);
 
-		socket.join(currentRoom.roomId);
+
 		usableRooms.push(currentRoom);
 
 		socket.emit('CREATE_ROOM', currentRoom);
