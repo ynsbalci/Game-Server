@@ -4,7 +4,7 @@
  * @Email:  ynsbalci@outlook.com
  * @Filename: server.js
  * @Last modified by:   Yunus BALCI
- * @Last modified time: 2017-11-02T14:36:13+03:00
+ * @Last modified time: 2017-11-20T13:30:08+03:00
  */
 
 
@@ -56,7 +56,7 @@
          room.players.push(player);
          socket.join(room.id);
          socket.emit('JOIN_ROOM', room);
-         console.log(">> JOINED " + room.id + " " + room.name + " " + room.pass + " " + room.max + " " + room.players.length);
+         console.log(">> JOINED " + room.id + " " + room.name + " " + room.pass + " " + room.scene +" " + room.type + " " + room.max + " " + room.players.length);
 
        }
        else {
@@ -73,7 +73,7 @@
    //
    socket.on('JOIN_RANDOM', function (data){
      //daha önce katılmamış sa
-     //console.log("JOIN_RANDOM " + data.type);
+     console.log("JOIN_RANDOM " + data.type);
      if (room == null) {
 
        room = JoinRandom(data);
@@ -82,7 +82,7 @@
          room.players.push(player);
          socket.join(room.id);
          socket.emit('JOIN_ROOM', room);
-         console.log(">> JOINED " + room.id + " " + room.name + " " + room.pass + " " + room.type + " " + room.max + " " + room.players.length);
+         console.log(">> JOINED " + room.id + " " + room.name + " " + room.pass + " " + room.scene +" " + room.type + " " + room.max + " " + room.players.length);
 
        }
        else {
@@ -105,13 +105,13 @@
        if (room != null) {
 
          //socket.emit('CREATE_ROOM', room);
-         console.log(">> CREATED " + room.id + " " + room.name + " " + room.pass + " " + room.type + " " + room.max + " " + room.players.length);
+         console.log(">> CREATED " + room.id + " " + room.name + " " + room.pass + " " + room.scene +" " + room.type + " " + room.max + " " + room.players.length);
 
          //room a katılım
          room.players.push(player);
          socket.join(room.id);
          socket.emit('JOIN_ROOM', room);
-         console.log(">> JOINED " + room.id + " " + room.name + " " + room.pass + " " + room.type + " " + room.max + " " + room.players.length);
+         console.log(">> JOINED " + room.id + " " + room.name + " " + room.pass + " " + room.scene +" " + room.type + " " + room.max + " " + room.players.length);
 
        }
      }
