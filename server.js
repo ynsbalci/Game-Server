@@ -4,7 +4,7 @@
  * @Email:  ynsbalci@outlook.com
  * @Filename: server.js
  * @Last modified by:   Yunus BALCI
- * @Last modified time: 2017-11-20T13:30:08+03:00
+ * @Last modified time: 2017-11-23T17:41:29+03:00
  */
 
 
@@ -47,7 +47,7 @@
    //
    socket.on('JOIN_ROOM', function (data){
      //daha önce katılmışsa
-     //console.log("JOIN_ROOM " + data.type);
+     //console.log("JOIN_ROOM " + data.id + " " + data.pass +  " " + data.type);
      if (room == null) {
        //
        room = JoinRoom(data);
@@ -73,7 +73,7 @@
    //
    socket.on('JOIN_RANDOM', function (data){
      //daha önce katılmamış sa
-     console.log("JOIN_RANDOM " + data.type);
+     console.log(">> JOIN_RANDOM " + data.type);
      if (room == null) {
 
        room = JoinRandom(data);
@@ -96,8 +96,8 @@
 
    });
 
-   //
-   socket.on('CREATE_ROOM', function (data){
+//
+socket.on('CREATE_ROOM', function (data){
      //
      if (room == null) {
        room = CreateRoom(data);
@@ -119,13 +119,13 @@
        console.log(">> I HAVE ONE ROOM");
      }
 
-   });
+});
 
-   //
-   socket.on('SPAWN', function (data){
+//
+socket.on('SPAWN', function (data){
      //
      if (room) {
-       console.log(">> SPAWNED " + player.id);
+       console.log(">> SPAWNED " + player.id + " " + data.nick + " " + data.vehId);
 
        player.nick = data.nick;
        player.vehId = data.vehId;
@@ -134,25 +134,28 @@
          if(room.players[i].spawn){
            //
            socket.emit('USER_CONNECTED', room.players[i]);
+           console.log(">> USER_CONNECTED " + room.players[i].id + " " + room.players[i].nick);
          }
        }
 
-       socket.emit('SPAWN', player);
        player.spawn = true;
+       socket.emit('SPAWN', player);
+
        socket.broadcast.to(room.id).emit('USER_CONNECTED',player);
 
        if (StartGame(room)) {
          //
+         console.log(">> STARTED " + room.id);
          io.sockets.to(room.id).emit('START', room);
        }
      }else {
        console.log(">> I HAVE NO ROOM");
      }
 
-   });
+});
 
-   //
-   socket.on('MOVE', function (data){
+//
+socket.on('MOVE', function (data){
      //console.log(">> MOVE: " + player.id + " " + room.id + " " + data.p_x + " " + data.p_y + " " + data.p_z);
      if (room) {
        socket.broadcast.to(room.id).emit('MOVE', {
@@ -165,22 +168,22 @@
          r_z: data.r_z
        });
      }
-   });
+});
 
-   //
-   socket.on('FINISH', function (data){
-     console.log(">> FINISH");
-     console.log(data);
+//
+socket.on('FINISH', function (data){
+     console.log(">> FINISH " + player.nick);
+     //console.log(data);
      io.sockets.to(room.id).emit('FINISH', {
        id: player.id,
        nick: player.nick,
        score: data.score
      });
-   });
+});
 
-  //
-  socket.on('EXIT', function (){
-		console.log(">>EXIT");
+//
+socket.on('EXIT', function (){
+		console.log(">> EXIT");
     //oda ya katılmışsa
     if (room) {
       //
@@ -197,13 +200,14 @@
       socket.broadcast.to(room.id).emit('DISCONNECTED', {
         id: player.id
       });
+      player.spawn = false;
       room = null;
 
 
     }else {
       console.log(">> NO ROOM");
     }
-  });
+});
 
   //
   socket.on('ROOM_LIST', function (){
@@ -211,12 +215,13 @@
 		console.log(">> ROOM_LIST: " + usableRooms.length);
     for (var i = 0; i < usableRooms.length; i++) {
       socket.emit('ROOM_LIST', usableRooms[i]);
+       console.log(">> ROOM_LIST " + usableRooms[i].id + " " + usableRooms[i].name + " " + usableRooms[i].pass + " " + usableRooms[i].scene +" " + usableRooms[i].type + " " + usableRooms[i].max + " " + usableRooms[i].players.length);
     }
 
-	});
+});
 
   //
-  socket.on('PLAYER_LIST', function (){
+socket.on('PLAYER_LIST', function (){
 
 		console.log(">> PLAYER_LIST: " + players.length);
 		for (var i = 0; i < players.length; i++) {
@@ -261,7 +266,7 @@
   });
 
 
- });
+});
 
  //FUNCTIONS
  function JoinRoom(data) {
@@ -322,12 +327,24 @@
 
  function StartGame(room) {
    //
-   for (var i = 0; i < room.players.length; i++) {
-     if (!room.players[i].spawn) {
-       return false;
-     }
+   if (room.type == 0) {
+     //console.log("type 0");
+     return true;
    }
-   return true;
+   if (room.players.length == room.max) {
+     //
+     for (var i = 0; i < room.players.length; i++) {
+       if (!room.players[i].spawn) {
+         return false;
+       }
+     }
+     console.log(">> ERROR");
+     return true;
+   }
+   else {
+     return false;
+   }
+
 
  }
 
